@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["streamlitissues"]
+
+[project]
+name = "streamlitissues"
+requires-python = ">=3.10"
+version = "0.1.0"
+description = "A project for processing Streamlit issues"
+authors = [
+    { name = "Siavash Yasini" }
+]
+
+dependencies = [
+    "pandas == 2.2.3",
+    "tqdm == 4.67.1",
+    "snowflake-connector-python == 3.12.4",
+    "snowflake-snowpark-python == 1.26.0",
+    "streamlit == 1.41.1",
+]
+
