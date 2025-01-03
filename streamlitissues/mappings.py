@@ -11,8 +11,8 @@ label_options_emoji_mapping = {
 
 # mapping for the issue state
 state_options_emoji_mapping = {
-        "open": "☐",
-        "closed": "☑"
+        "open": ":material/adjust:",
+        "closed": ":material/check_circle:"
     }
 
 # mapping for the issue type
