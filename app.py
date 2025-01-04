@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from streamlitissues.mappings import sorting_mapping, label_options_emoji_mapping, state_options_emoji_mapping, type_options_emoji_mapping, avatar_mapping, model_token_sizes
-from streamlitissues.utils import create_snowflake_session_root, query_cortex_search_service, parse_label_categories, build_prompt, get_response_from_cortex, join_issue_bodies_for_context
+from streamlitissues.utils import create_snowflake_session_root, query_cortex_search_service, parse_label_categories, build_prompt, get_response_from_cortex, join_issue_bodies_for_context, show_limit_warning, increment_search_counter
 
 # fetch snowflake connection parameters from secrets
 snowflake_parameters = dict(st.secrets["snowflake"]) 
@@ -26,31 +26,57 @@ if "results" not in st.session_state:
 if "search_counter" not in st.session_state:
     st.session_state["search_counter"] = 0
 
-
+SEARCH_LIMIT = 5
+CHAT_LIMIT = 3
 # ---------------------------------------------------------------------------- #
 #                                StreamliTissues                               #
 # ---------------------------------------------------------------------------- #
 
+
 # Let the fun begin! 
 
 # ----------------------------- Search Form ----------------------------- #
-search_form = st.form("search_form")
-query = search_form.text_input("Enter your search query:", 
-                          placeholder="Ugh, the Streamlit widgetamajig doesn't work! 😭")
-    
-submit_button = search_form.form_submit_button(label=f"Search")
-if submit_button:
+
+def submit_search_query():
+    """Callback function to submit the search query.
+    This is defined to allow keeping track of the search counter.
+    """
+    query = st.session_state["search_query"]  # defined in the form
     if query:
         # query the cortext search service
-        response = query_cortex_search_service(snowflake_root=snowflake_root, 
-                                               query_service_params=cortex_service_params,
-                                               query=query)
+        response = query_cortex_search_service(
+            snowflake_root=snowflake_root, 
+            query_service_params=cortex_service_params,
+            query=query
+            )
+        
+        # store the results in the session state and increment the search counter
         st.session_state["results"] = response["results"]
-        # st.write(st.session_state["search_counter"])
         st.session_state["search_counter"] += 1
+
     else:
         st.warning("Hmm, did you forget to enter a search query? 🤔")
     
+
+
+with st.form("search_form"):
+
+    query = st.text_input("Enter your search query:", 
+                          key="search_query",
+                          placeholder="Ugh, the Streamlit widgetamajig doesn't work! 😭")
+    
+    # calculate the remaining searches and show a warning if the limit is reached
+    remaining_searches = (SEARCH_LIMIT - st.session_state["search_counter"]) 
+    if remaining_searches < 0:
+        show_limit_warning()
+
+    # add a submit button to trigger the search    
+    submit_button = st.form_submit_button(
+        label=f"Search ({remaining_searches if remaining_searches >= 0 else 0} Remaining)", 
+        disabled=bool(remaining_searches < 0),
+        on_click=submit_search_query
+
+    )
 
 # ---------------------------------- Filters --------------------------------- #
     
