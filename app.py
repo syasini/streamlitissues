@@ -27,7 +27,6 @@ if "search_counter" not in st.session_state:
     st.session_state["search_counter"] = 0
 
 SEARCH_LIMIT = 5
-CHAT_LIMIT = 3
 # ---------------------------------------------------------------------------- #
 #                                StreamliTissues                               #
 # ---------------------------------------------------------------------------- #
