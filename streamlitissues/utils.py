@@ -3,13 +3,40 @@ from snowflake.core import Root
 from snowflake.snowpark import Session
 
 
+# --------------------------- Snowflake Connection --------------------------- #
+
 @st.cache_resource
 def create_snowflake_session_root(connection_parameters):
     """Create a Snowflake session and root object."""
     session = Session.builder.configs(connection_parameters).create()
     root = Root(session)
-    return root
+    return session, root
 
+# ------------------------- Cortex Utility Functions ------------------------- #
+
+def join_issue_bodies_for_context(issue_body_list, max_char_limit=13000):
+    """Join the issue bodies to create the context for the model.
+    truncate the issue bodies to the max character limit for safe usage with COMPLETE function.
+    """
+    # estimate the maximum character limit per issue
+    max_char_limit_per_issue = max_char_limit // len(issue_body_list)
+    # truncate the issue bodies to the max character limit
+    issue_body_list_truncated = [body[:max_char_limit_per_issue] for body in issue_body_list]
+    context = "\n".join(issue_body_list_truncated)
+    return context
+
+def get_model_token_count(model_name, text, snowflake_session) -> int:
+    """Get the token count for the model."""
+    token_count = 0
+    try:
+        token_cmd = """select SNOWFLAKE.CORTEX.COUNT_TOKENS(?, ?) as token_count;"""
+        token_data = snowflake_session.sql(token_cmd, params=[model_name, text]).collect()
+        token_count = token_data[0][0]
+    except Exception:
+        # set to -1 if there is an error
+        token_count = -1
+
+    return token_count
 
 def query_cortex_search_service(snowflake_root, query_service_params, query, limit=60):
     """Query the cortex search service.
@@ -53,6 +80,40 @@ def query_cortex_search_service(snowflake_root, query_service_params, query, lim
         )
     return response.dict()
 
+
+def build_prompt(question, context):
+    """Build the prompt for the Cortex model."""
+    prompt = f"""
+    You are an expert assistant specializing in software development, particularly in Python and Streamlit. 
+    Your task is to help users understand and resolve issues related to their Streamlit projects, using the GitHub issues provided in the context. 
+    Use the context provided to answer the question accurately and provide detailed explanations where necessary.
+    Context: {context}
+    Question: {question}
+    Answer:
+    """
+    return prompt
+
+def get_response_from_cortex(prompt, model_name, snowflake_session, cortex_service_params):
+    """Get the response from the Cortex model."""
+    cortex_cmd = "select SNOWFLAKE.CORTEX.TRY_COMPLETE(?, ?) as response"
+
+    snowflake_session.use_warehouse(cortex_service_params["warehouse"])
+    
+    # call the cortex complete function to get the response
+    response_df = snowflake_session.sql(cortex_cmd, params=[model_name, prompt]).collect()
+    response = response_df[0]['RESPONSE']
+
+    if response:
+        return response
+    else:
+        # get the token size of the model upon failure and return a message
+        token_size = get_model_token_count(model_name=model_name, text=prompt, snowflake_session=snowflake_session)
+        return f"I tried ingesting too much text ({token_size} tokens to be exact) \
+                and accidentally threw up! 🤢\n \I'm going to need a break...\n meanwhile\
+                meanwhile try reducing the number of issues you're feeding me!"
+
+
+# ------------------------- Parsing Utility Functions ------------------------ #
 def parse_label_categories(label_str):
     """Parse the label categories from the raw data.
     Parameters:
