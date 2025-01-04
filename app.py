@@ -199,40 +199,43 @@ if results is not None:
 # --------------------------- Chat with the issues --------------------------- #   
 
 if chat_col is not None:
+
+    # add a password to the chat to prevent unauthorized access (for cost considerations, you know...)
     chat_password = st.sidebar.text_input("Enter Chat password", type="password")
     if chat_password == cortex_service_params["chat_password"]:
-
+        
+        # make sure there are search results to chat with
         if results is None:
             chat_col.warning("Please search for issues first.")
         else:
+            # create a chat container to display the messages
             messages = chat_col.container(height=700)
 
+            # initialize the messages session state
             if "messages" not in st.session_state:
                 st.session_state["messages"] = [
                     {"role": "ai", "content": "Frankly, I don't know why this app has such a silly name so don't ask me that! \
                     How else may I help you today?"}
                     ]
 
+            # display the previous chat messages
             for message in st.session_state.messages:
-                
                 with messages.chat_message(message["role"], avatar=avatar_mapping[message["role"]]):
                     st.markdown(message["content"])
 
-            # chat_remaining = CHAT_LIMIT - len([message for message in st.session_state.messages if message["role"] == "user"])
-            if prompt := chat_col.chat_input(
-                f"Speak your mind...",
-                ):
+            # add a chat input to allow the user to chat with the issues
+            if prompt := chat_col.chat_input("Speak your mind..."):
                 st.session_state.messages.append({"role": "user", "content": prompt})
                 with messages.chat_message("user", avatar=avatar_mapping["user"]):
                     st.markdown(prompt)
                 
                 # Build the context from the results_df["body"] to concatenate all the github issue descriptions
-                
                 context = join_issue_bodies_for_context(results_df["body"].tolist())
-                # Build the prompt
+                
+                # Build the LLM prompt
                 prompt_text = build_prompt(prompt, context)
 
-                # Get the response from Snowflake Cortex
+                # Get the response from Snowflake Cortex and display it
                 with messages.chat_message("ai", avatar=avatar_mapping["ai"]):
                     with st.spinner("thinking..."):
                         response = get_response_from_cortex(prompt_text, 
@@ -241,7 +244,6 @@ if chat_col is not None:
                                                             cortex_service_params=cortex_service_params,)
                 
                         st.session_state.messages.append({"role": "ai", "content": response})
-
                         st.markdown(response)
 
     elif chat_password == "":
