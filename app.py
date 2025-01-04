@@ -1,21 +1,22 @@
 import pandas as pd
 import streamlit as st
 
-from streamlitissues.mappings import sorting_mapping, label_options_emoji_mapping, state_options_emoji_mapping, type_options_emoji_mapping
-from streamlitissues.utils import create_snowflake_session_root, query_cortex_search_service, parse_label_categories
-
+from streamlitissues.mappings import sorting_mapping, label_options_emoji_mapping, state_options_emoji_mapping, type_options_emoji_mapping, avatar_mapping, model_token_sizes
+from streamlitissues.utils import create_snowflake_session_root, query_cortex_search_service, parse_label_categories, build_prompt, get_response_from_cortex, join_issue_bodies_for_context
 
 # fetch snowflake connection parameters from secrets
 snowflake_parameters = dict(st.secrets["snowflake"]) 
 
 # create a snowflake root object
-snowflake_root = create_snowflake_session_root(snowflake_parameters)
+snowflake_session, snowflake_root = create_snowflake_session_root(snowflake_parameters)
 
 # create the cortex search query params
 cortex_service_params = dict(st.secrets["cortex"])
 
 # Streamlit app title and logo
-st.image("./media/logo-medium.png",)
+
+_, col, _ = st.columns([1, 2, 1])
+col.image("./media/logo-medium.png", width=400)
 st.title("What seems to be the issue?")
 
 # Initialize the search results and counter session states
@@ -24,6 +25,7 @@ if "results" not in st.session_state:
     
 if "search_counter" not in st.session_state:
     st.session_state["search_counter"] = 0
+
 
 # ---------------------------------------------------------------------------- #
 #                                StreamliTissues                               #
@@ -81,7 +83,7 @@ with st.expander("Filter and Sort Results"):
                                           format_func=lambda x: type_options_emoji_mapping[x] + " " + x)
     
     # add filter for number of results
-    n_results = filter_col_r.slider("Limit Results to ", min_value=5, max_value=30, value=10, step=5)
+    n_results = filter_col_r.slider("Limit Results to ", min_value=5, max_value=20, value=10, step=5)
 
     # add sorting options
     sorting_option = \
@@ -96,7 +98,15 @@ with st.expander("Filter and Sort Results"):
 # -------------------------------- Chat Option ------------------------------- #
 
 # add a toggle to enable chat with the issues
-chat_toggle = st.toggle("Chat with issues", value=False)
+_, chat_col = st.columns(2)
+chat_toggle = chat_col.toggle("Chat with issues", value=False)
+if chat_toggle:
+    with chat_col:
+        # allow the user to select a model for the chat
+        model_name = st.selectbox("Select a model", options = model_token_sizes.keys())
+        # add a button to reset the chat
+        if st.button("Reset Chat", type="primary"):
+            st.session_state["messages"] = []
 
 # create columns for the issues and chat
 if chat_toggle:
@@ -159,4 +169,40 @@ if results is not None:
             st.divider()
             st.caption("Issue Description")
             st.markdown(result["body"])
+
+# --------------------------- Chat with the issues --------------------------- #
+if chat_col is not None:
+    if results is None:
+        st.warning("Please search for issues first.")
+    else:
+        messages = chat_col.container(height=700)
+
+        if "messages" not in st.session_state:
+            st.session_state["messages"] = [
+                {"role": "ai", "content": "Frankly, I don't know why this app has such a silly name so don't ask me that! How else may I help you today?"}
+                ]
+
+        for message in st.session_state.messages:
+            
+            with messages.chat_message(message["role"], avatar=avatar_mapping[message["role"]]):
+                st.markdown(message["content"])
+
+        if prompt := chat_col.chat_input("Speak your mind..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with messages.chat_message("user", avatar=avatar_mapping["user"]):
+                st.markdown(prompt)
+            
+            # Build the context from the results_df["body"] to concatenate all the github issue descriptions
+            context = join_issue_bodies_for_context(results_df["body"].tolist())
+            # Build the prompt
+            prompt_text = build_prompt(prompt, context)
+
+            # Get the response from Snowflake Cortex
+            with messages.chat_message("ai", avatar=avatar_mapping["ai"]):
+                with st.spinner("thinking..."):
+                    response = get_response_from_cortex(prompt_text, model_name=model_name, snowflake_session=snowflake_session, cortex_service_params=cortex_service_params)
+            
+                    st.session_state.messages.append({"role": "ai", "content": response})
+
+                    st.markdown(response)
 
