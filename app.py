@@ -129,7 +129,7 @@ chat_toggle = chat_col.toggle("Chat with issues", value=False)
 if chat_toggle:
     with chat_col:
         # allow the user to select a model for the chat
-        model_name = st.selectbox("Select a model", options = model_token_sizes.keys())
+        model_name = st.selectbox("Select a model", options = model_token_sizes.keys(), index=2)
         # add a button to reset the chat
         if st.button("Reset Chat", type="primary"):
             st.session_state["messages"] = []
@@ -196,39 +196,55 @@ if results is not None:
             st.caption("Issue Description")
             st.markdown(result["body"])
 
-# --------------------------- Chat with the issues --------------------------- #
+# --------------------------- Chat with the issues --------------------------- #   
+
 if chat_col is not None:
-    if results is None:
-        st.warning("Please search for issues first.")
+    chat_password = st.sidebar.text_input("Enter Chat password", type="password")
+    if chat_password == cortex_service_params["chat_password"]:
+
+        if results is None:
+            chat_col.warning("Please search for issues first.")
+        else:
+            messages = chat_col.container(height=700)
+
+            if "messages" not in st.session_state:
+                st.session_state["messages"] = [
+                    {"role": "ai", "content": "Frankly, I don't know why this app has such a silly name so don't ask me that! \
+                    How else may I help you today?"}
+                    ]
+
+            for message in st.session_state.messages:
+                
+                with messages.chat_message(message["role"], avatar=avatar_mapping[message["role"]]):
+                    st.markdown(message["content"])
+
+            # chat_remaining = CHAT_LIMIT - len([message for message in st.session_state.messages if message["role"] == "user"])
+            if prompt := chat_col.chat_input(
+                f"Speak your mind...",
+                ):
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                with messages.chat_message("user", avatar=avatar_mapping["user"]):
+                    st.markdown(prompt)
+                
+                # Build the context from the results_df["body"] to concatenate all the github issue descriptions
+                
+                context = join_issue_bodies_for_context(results_df["body"].tolist())
+                # Build the prompt
+                prompt_text = build_prompt(prompt, context)
+
+                # Get the response from Snowflake Cortex
+                with messages.chat_message("ai", avatar=avatar_mapping["ai"]):
+                    with st.spinner("thinking..."):
+                        response = get_response_from_cortex(prompt_text, 
+                                                            model_name=model_name, 
+                                                            snowflake_session=snowflake_session, 
+                                                            cortex_service_params=cortex_service_params,)
+                
+                        st.session_state.messages.append({"role": "ai", "content": response})
+
+                        st.markdown(response)
+
+    elif chat_password == "":
+        chat_col.warning("Please enter the chat password to use the chat function.")
     else:
-        messages = chat_col.container(height=700)
-
-        if "messages" not in st.session_state:
-            st.session_state["messages"] = [
-                {"role": "ai", "content": "Frankly, I don't know why this app has such a silly name so don't ask me that! How else may I help you today?"}
-                ]
-
-        for message in st.session_state.messages:
-            
-            with messages.chat_message(message["role"], avatar=avatar_mapping[message["role"]]):
-                st.markdown(message["content"])
-
-        if prompt := chat_col.chat_input("Speak your mind..."):
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with messages.chat_message("user", avatar=avatar_mapping["user"]):
-                st.markdown(prompt)
-            
-            # Build the context from the results_df["body"] to concatenate all the github issue descriptions
-            context = join_issue_bodies_for_context(results_df["body"].tolist())
-            # Build the prompt
-            prompt_text = build_prompt(prompt, context)
-
-            # Get the response from Snowflake Cortex
-            with messages.chat_message("ai", avatar=avatar_mapping["ai"]):
-                with st.spinner("thinking..."):
-                    response = get_response_from_cortex(prompt_text, model_name=model_name, snowflake_session=snowflake_session, cortex_service_params=cortex_service_params)
-            
-                    st.session_state.messages.append({"role": "ai", "content": response})
-
-                    st.markdown(response)
-
+        chat_col.warning("Chat password is incorrect. Did someone gave you the wrong password? or did you just try to randomly guess it? 🤔")
