@@ -275,7 +275,7 @@ if chat_col is not None:
                     st.markdown(prompt)
 
                 # Build the context from the results_df["body"] to concatenate all the github issue descriptions
-                context = join_issue_bodies_for_context(results_df["body"].tolist())
+                context = join_issue_bodies_for_context(results_df["cortex_data"].tolist())
 
                 # Build the LLM prompt
                 prompt_text = build_prompt(prompt, context)
