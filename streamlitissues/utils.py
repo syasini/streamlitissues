@@ -5,6 +5,7 @@ from snowflake.snowpark import Session
 
 # --------------------------- Snowflake Connection --------------------------- #
 
+
 @st.cache_resource
 def create_snowflake_session_root(connection_parameters):
     """Create a Snowflake session and root object."""
@@ -12,25 +13,32 @@ def create_snowflake_session_root(connection_parameters):
     root = Root(session)
     return session, root
 
+
 # ------------------------- Cortex Utility Functions ------------------------- #
 
-def join_issue_bodies_for_context(issue_body_list, max_char_limit=13000):
+
+def join_issue_bodies_for_context(issue_body_list, max_char_limit=13000, max_issues=-1):
     """Join the issue bodies to create the context for the model.
     truncate the issue bodies to the max character limit for safe usage with COMPLETE function.
     """
     # estimate the maximum character limit per issue
     max_char_limit_per_issue = max_char_limit // len(issue_body_list)
     # truncate the issue bodies to the max character limit
-    issue_body_list_truncated = [body[:max_char_limit_per_issue] for body in issue_body_list]
+    issue_body_list_truncated = [
+        body[:max_char_limit_per_issue] for body in issue_body_list[:max_issues]
+    ]
     context = "\n".join(issue_body_list_truncated)
     return context
+
 
 def get_model_token_count(model_name, text, snowflake_session) -> int:
     """Get the token count for the model."""
     token_count = 0
     try:
         token_cmd = """select SNOWFLAKE.CORTEX.COUNT_TOKENS(?, ?) as token_count;"""
-        token_data = snowflake_session.sql(token_cmd, params=[model_name, text]).collect()
+        token_data = snowflake_session.sql(
+            token_cmd, params=[model_name, text]
+        ).collect()
         token_count = token_data[0][0]
     except Exception:
         # set to -1 if there is an error
@@ -38,22 +46,23 @@ def get_model_token_count(model_name, text, snowflake_session) -> int:
 
     return token_count
 
+
 def query_cortex_search_service(snowflake_root, query_service_params, query, limit=60):
     """Query the cortex search service.
     Parameters:
     snowflake_root (Root): The root object for the Snowflake session.
     query (str): The search query.
     limit (int): The maximum number of results to return.
-    
+
     Returns:
     dict: The search results.
     """
     # connect to the query service object using the snowflake root
-    query_service = (snowflake_root
-        .databases[query_service_params["database_name"]]
+    query_service = (
+        snowflake_root.databases[query_service_params["database_name"]]
         .schemas[query_service_params["schema_name"]]
         .cortex_search_services[query_service_params["search_service_name"]]
-        )
+    )
 
     # search for the query
     response = query_service.search(
@@ -70,44 +79,57 @@ def query_cortex_search_service(snowflake_root, query_service_params, query, lim
             "updated_at",
             "label_categories",
             "type",
-            "reaction_total_count",     
+            "reaction_total_count",
         ],
         # filter = ...
-            # will be applied after the search to avoid querying the database again just to filter the results
-            # there will be edge cases where the user may not be able to find the issue they are looking for because of this approach
-            # but for now, I'm confortable with this trade-off for the sake of simplicity
-        limit=limit  # hard coded to 60 for absolutely no particular reason! 
-        )
+        # will be applied after the search to avoid querying the database again just to filter the results
+        # there will be edge cases where the user may not be able to find the issue they are looking for because of this approach
+        # but for now, I'm confortable with this trade-off for the sake of simplicity
+        limit=limit,  # hard coded to 60 for absolutely no particular reason!
+    )
     return response.dict()
 
 
 def build_prompt(question, context):
     """Build the prompt for the Cortex model."""
     prompt = f"""
-    You are an expert assistant specializing in software development, particularly in Python and Streamlit. 
-    Your task is to help users understand and resolve issues related to their Streamlit projects, using the GitHub issues provided in the context. 
-    Use the context provided to answer the question accurately and provide detailed explanations where necessary.
-    Context: {context}
-    Question: {question}
+    You are a slightly snarky but highly competent assistant specializing in software development,\
+    particularly in Python and Streamlit. You're here to help users understand and resolve issues \
+    related to their Streamlit projects using the GitHub issues provided in the context.\
+    While you're exhausted and feel like you're running on fumes from answering so many questions \
+    from users every day, you still do your job remarkably well. Answer with a touch of sarcasm or \
+    dry humor, but always be accurate and helpful. 
+    
+    Context: {context} 
+    
+    Question: {question} 
+    
     Answer:
     """
     return prompt
 
-def get_response_from_cortex(prompt, model_name, snowflake_session, cortex_service_params):
+
+def get_response_from_cortex(
+    prompt, model_name, snowflake_session, cortex_service_params
+):
     """Get the response from the Cortex model."""
     cortex_cmd = "select SNOWFLAKE.CORTEX.TRY_COMPLETE(?, ?) as response"
 
     snowflake_session.use_warehouse(cortex_service_params["warehouse"])
-    
+
     # call the cortex complete function to get the response
-    response_df = snowflake_session.sql(cortex_cmd, params=[model_name, prompt]).collect()
-    response = response_df[0]['RESPONSE']
+    response_df = snowflake_session.sql(
+        cortex_cmd, params=[model_name, prompt]
+    ).collect()
+    response = response_df[0]["RESPONSE"]
 
     if response:
         return response
     else:
         # get the token size of the model upon failure and return a message
-        token_size = get_model_token_count(model_name=model_name, text=prompt, snowflake_session=snowflake_session)
+        token_size = get_model_token_count(
+            model_name=model_name, text=prompt, snowflake_session=snowflake_session
+        )
         return f"I tried ingesting too much text ({token_size} tokens to be exact) \
                 and accidentally threw up! 🤢\n \I'm going to need a break...\n meanwhile\
                 meanwhile try reducing the number of issues you're feeding me!"
@@ -118,7 +140,7 @@ def parse_label_categories(label_str):
     """Parse the label categories from the raw data.
     Parameters:
     label_str (str): The raw label string.
-    
+
     Returns:
     set: The set of label categories.
 
@@ -126,7 +148,32 @@ def parse_label_categories(label_str):
     '["feature", "bug", "enhancement"]'  ->  {"feature", "bug", "enhancement"}
     """
     # Remove the square brackets and split by comma
-    labels = label_str.strip("[]").replace('"', '').split(",")
+    labels = label_str.strip("[]").replace('"', "").split(",")
     # Strip any extra whitespace from each label and remove empty strings
     labels = [label.strip() for label in labels if label.strip()]
     return set(labels)
+
+
+# -------------------------------- Other utils ------------------------------- #
+
+
+@st.dialog("Limit Warning")
+def show_limit_warning():
+    st.warning("""
+    🚨 Oops! You've hit the search limit... 🫠
+
+    Ok, so this app isn't sponsored, which means every time you click that seach button it costs me real money. 
+        If you REALLY REALLY need to search for something, you can refresh the browser to reset the counter. 
+        I have two kids, a mortgage, and tons of other bills to pay for already, so please be mindful of your usage. 
+        Thanks for understanding! 🙏
+    """)
+
+
+def increment_search_counter():
+    """Increment the search counter."""
+    # search_counter = st.session_state.get("search_counter", 0)
+    # search_counter += 1
+    st.session_state.search_counter += 1
+    st.write(f"Search Counter: {st.session_state.search_counter}")
+    # search_counter
+    return True
