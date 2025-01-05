@@ -22,6 +22,11 @@ StreamliTissues uses Snowflake Cortex's Large Language Model (LLM) to dramatical
 
 ### How It Works
 
+Here is a simplistic diagram of the app architecture:
+![StreamliTissues Diagram](./media/streamlitissues_diagram.png)
+
+
+
 1. **Data Extraction and Processing:** GitHub issues data is scraped and processed using a custom ETL (Extract, Transform, Load) pipeline. The pipeline extracts issue details, categorizes them, and prepares the data for efficient retrieval and analysis and stores it in Snowflake to be ingested by ortex.
 2. **Streamlit App Interface:** The Streamlit app serves as the UI frontend, allowing users to search for and interact with the processed data in an intuitive and efficient manner.
 3. **Search:** Enter a natural language query, such as "How do I freeze columns in a data frame?"
