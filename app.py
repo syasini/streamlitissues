@@ -238,7 +238,7 @@ if results is not None:
 if chat_col is not None:
     # add a password to the chat to prevent unauthorized access (for cost considerations, you know...)
     chat_password = st.sidebar.text_input("Enter Chat password", type="password")
-    if chat_password == cortex_service_params["chat_password"]:
+    if chat_password == cortex_service_params["chat_password"] or cortex_service_params["by_pass_password"]:
         # make sure there are search results to chat with
         if results is None:
             chat_col.warning("Please search for issues first.")
