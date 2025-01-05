@@ -1,5 +1,5 @@
 # StreamliTissues
-Revolutionizing Streamlit Issue Discovery on GitHub with Snowflake Cortex LLM
+A meta-app, built with Streamlit—supercharged with Snowflake AI—to help Streamlit evolve, one issue at a time.
 
 ![StreamliTissues Logo](./media/logo-medium.png)
 
