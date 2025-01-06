@@ -251,7 +251,7 @@ if chat_col is not None:
                 st.session_state["messages"] = [
                     {
                         "role": "ai",
-                        "content": "*Sigh* Hi there… I'm yet another AI assistant, trying my best to help you make sense of whatever you just searched for. \
+                        "content": "*[Sigh]* Hi there… I'm yet another AI assistant, trying my best to help you make sense of whatever you just searched for. \
                         Frankly, I don't know why this app has such a silly name, so don't ask me that…",
                     },
                     {
