@@ -161,16 +161,25 @@ def parse_label_categories(label_str):
 # -------------------------------- Other utils ------------------------------- #
 
 
-@st.dialog("Limit Warning")
+@st.dialog("Search Limit Warning")
 def show_limit_warning():
     st.warning("""
     🚨 Oops! You've hit the search limit... 🫠
 
-    Ok, so this app isn't sponsored, which means every time you click that seach button it costs me real money. 
-        If you REALLY REALLY need to search for something, you can refresh the browser to reset the counter. 
-        I have two kids, a mortgage, and tons of other bills to pay for already, so please be mindful of your usage. 
-        Thanks for understanding! 🙏
+    So here's the deal: this app isn't sponsored (yet), which means every time you smash that search button, 
+        it costs me actual money. Like the kind that could get me an overpriced coffee from that place that always misspell my name.
+    
+    If you REALLY REALLY need to search again, try refreshing the browser to reset the counter. 
+        But please, go easy on me—I’ve got kids to feed, a mortgage to pay, and a mountain of 
+        bills taller than the kids' laundry pile.
+    
+    Thanks for your understanding and support! 🙏
+               
+    If you're interested in sponsoring this project, wait, what? Really? 🤩
+               
+    Wow! You're amazing! Please reach out to me on [LinkedIn](https://www.linkedin.com/in/siavash-yasini/). 
     """)
+
 
 
 def increment_search_counter():
