@@ -1,9 +1,10 @@
 # StreamliTissues
 A meta-app, built with Streamlit—supercharged with Snowflake AI—to help Streamlit evolve, one issue at a time.
 
-> Wipe your Streamlit issues with StreamliTissues! —— My wife 
 
 ![StreamliTissues Logo](./media/logo-medium.png)
+
+> Wipe your Streamlit issues with StreamliTissues! —— My wife 
 
 ## Problem Statement
 
