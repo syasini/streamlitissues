@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=42", "wheel", "poetry-core>=1.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -14,11 +14,25 @@ authors = [
     { name = "Siavash Yasini" }
 ]
 
+# keep it compatible with pip
 dependencies = [
-    "pandas == 2.2.3",
-    "tqdm == 4.67.1",
-    "snowflake-connector-python == 3.12.4",
-    "snowflake-snowpark-python == 1.26.0",
-    "streamlit == 1.41.1",
+    "pandas==2.2.3",
+    "tqdm==4.67.1",
+    "snowflake-connector-python==3.12.4",
+    "snowflake-snowpark-python==1.26.0",
+    "streamlit==1.41.1",
 ]
 
+[tool.poetry]
+name = "streamlitissues"
+version = "0.1.0"
+description = "A project for processing Streamlit issues"
+authors = ["Siavash Yasini siavash.yasini@gmail.com>"]
+requires-python = ">=3.10"
+
+[tool.poetry.dependencies]
+pandas = "2.2.3"
+tqdm = "4.67.1"
+snowflake-connector-python = "3.12.4"
+snowflake-snowpark-python = "1.26.0"
+streamlit = "1.41.1"
