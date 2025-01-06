@@ -28,7 +28,7 @@ authors = ["Siavash Yasini"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.10,<3.12""
 pandas = "2.2.3"
 tqdm = "4.67.1"
 snowflake-connector-python = "3.12.4"
