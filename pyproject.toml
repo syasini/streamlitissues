@@ -17,7 +17,7 @@ dependencies = [
     "tqdm==4.67.1",
     "snowflake-connector-python==3.12.4",
     "snowflake-snowpark-python==1.26.0",
-    "snowflake.core==1.0.2",
+    "snowflake==1.0.2",
     "streamlit==1.41.1",
 ]
 
@@ -34,5 +34,5 @@ pandas = "2.2.3"
 tqdm = "4.67.1"
 snowflake-connector-python = "3.12.4"
 snowflake-snowpark-python = "1.26.0"
-snowflake.core = "1.0.2"
+snowflake = "1.0.2"
 streamlit = "1.41.1"
