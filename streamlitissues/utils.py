@@ -167,7 +167,7 @@ def show_limit_warning():
     🚨 Oops! You've hit the search limit... 🫠
 
     So here's the deal: this app isn't sponsored (yet), which means every time you smash that search button, 
-        it costs me actual money. Like the kind that could get me an overpriced coffee from that place that always misspell my name.
+        it costs me actual money. Like the kind that could get me an overpriced coffee from that place that always misspells my name.
     
     If you REALLY REALLY need to search again, try refreshing the browser to reset the counter. 
         But please, go easy on me—I’ve got kids to feed, a mortgage to pay, and a mountain of 
