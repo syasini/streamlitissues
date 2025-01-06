@@ -31,7 +31,7 @@ cortex_service_params = dict(st.secrets["cortex"])
 # Streamlit app title and logo
 _, col, _ = st.columns([1, 2, 1])
 col.image("./media/logo-medium.png", width=400)
-st.title("What seems to be your STREAMLITissue?")
+st.title("What seems to be your Streamlit issue?")
 
 # Initialize the search results and counter session states
 if "results" not in st.session_state:
