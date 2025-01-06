@@ -3,6 +3,7 @@
 [![Streamlit](https://img.shields.io/badge/-Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![GitHub](https://img.shields.io/badge/GitHub%20API-000?logo=github&logoColor=fff)](https://docs.github.com/en/rest)
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](https://www.python.org/)
 
 A meta-app, built with Streamlit—supercharged with Snowflake AI—to help Streamlit evolve, one issue at a time.
 
