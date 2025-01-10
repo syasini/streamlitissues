@@ -1,7 +1,7 @@
 import streamlit as st
 from snowflake.core import Root
 from snowflake.snowpark import Session
-
+from snowflake.snowpark.exceptions import SnowparkSQLException
 
 # --------------------------- Snowflake Connection --------------------------- #
 
@@ -10,6 +10,8 @@ from snowflake.snowpark import Session
 def create_snowflake_session_root(connection_parameters):
     """Create a Snowflake session and root object."""
     session = Session.builder.configs(connection_parameters).create()
+    # ensure the correct warehouse is used
+    session.use_warehouse(connection_parameters["warehouse"])
     root = Root(session)
     return session, root
 
@@ -64,30 +66,35 @@ def query_cortex_search_service(snowflake_root, query_service_params, query, lim
         .cortex_search_services[query_service_params["search_service_name"]]
     )
 
-    # search for the query
-    response = query_service.search(
-        query=query,
-        columns=[
-            "number",
-            "title",
-            "body",
-            "state",
-            "html_url",
-            "closed_at",
-            "created_at",
-            "html_url",
-            "updated_at",
-            "label_categories",
-            "type",
-            "reaction_total_count",
-        ],
-        # filter = ...
-        # will be applied after the search to avoid querying the database again just to filter the results
-        # there will be edge cases where the user may not be able to find the issue they are looking for because of this approach
-        # but for now, I'm confortable with this trade-off for the sake of simplicity
-        limit=limit,  # hard coded to 60 for absolutely no particular reason!
-    )
-    return response.dict()
+    try: 
+        # search for the query
+        response = query_service.search(
+            query=query,
+            columns=[
+                "number",
+                "title",
+                "body",
+                "state",
+                "html_url",
+                "closed_at",
+                "created_at",
+                "html_url",
+                "updated_at",
+                "label_categories",
+                "type",
+                "reaction_total_count",
+                "cortex_data"
+            ],
+            # filter = ...
+            # will be applied after the search to avoid querying the database again just to filter the results
+            # there will be edge cases where the user may not be able to find the issue they are looking for because of this approach
+            # but for now, I'm confortable with this trade-off for the sake of simplicity
+            limit=limit,  # hard coded to 60 for absolutely no particular reason!
+        )
+        return response.dict()
+    except SnowparkSQLException as e:
+        st.warning(get_resource_limit_warning())
+        return {}
 
 
 def build_prompt(question, context):
@@ -120,12 +127,18 @@ def get_response_from_cortex(
     cortex_cmd = "select SNOWFLAKE.CORTEX.TRY_COMPLETE(?, ?) as response"
 
     snowflake_session.use_warehouse(cortex_service_params["warehouse"])
+    
+    try:
+        # call the cortex complete function to get the response
+        response_df = snowflake_session.sql(
+            cortex_cmd, params=[model_name, prompt]
+        ).collect()
+        response = response_df[0]["RESPONSE"]
+    
+    except SnowparkSQLException as e:
+        response = None
+        return get_resource_limit_warning()
 
-    # call the cortex complete function to get the response
-    response_df = snowflake_session.sql(
-        cortex_cmd, params=[model_name, prompt]
-    ).collect()
-    response = response_df[0]["RESPONSE"]
 
     if response:
         return response
@@ -138,6 +151,18 @@ def get_response_from_cortex(
                 and accidentally threw up! 🤢\n \I'm going to need a break...\n meanwhile\
                 meanwhile try reducing the number of issues you're feeding me!"
 
+def build_context_column(issue_data):
+    """Build the context column for the issue data by concatenating the relevant fields."""
+    context_column = (
+        "<title>: " + issue_data["title"] + 
+        "\n <label_categories>: " + issue_data["label_categories"].astype(str) + 
+        "\n <state>: " + issue_data["state"] +
+        "\n <type>: " + issue_data["type"] +
+        "\n <reaction_total_count>: " + str(issue_data["reaction_total_count"]) +
+        "\n <body>: " + issue_data["body"]
+    )   
+
+    return context_column
 
 # ------------------------- Parsing Utility Functions ------------------------ #
 def parse_label_categories(label_str):
@@ -180,6 +205,18 @@ def show_limit_warning():
     Wow! You're amazing! Please reach out to me on [LinkedIn](https://www.linkedin.com/in/siavash-yasini/). 
     """)
 
+def get_resource_limit_warning():
+    return """
+        This is awkward 🙈😬... Looks like the Snowflake warehouse powering the AI smarts is taking a mandatory nap because it hit its resource limit\
+                (set by me to make sure I don't accidentally go broke). 
+
+        Unfortunately, you'll have to wait a little bit for it to wake up, stretch, and get back to work. \
+            Meanwhile, why not grab a coffee and take a moment to appreciate that you're not a server stuck in a resource quota?
+
+        If you think this was a mistake, please go ahead and create a new issue on the [streamliTissues GitHub repo](https://github.com/syasini/streamlitissues). 
+
+        Thanks for your patience and understanding! 🙏
+        """
 
 
 def increment_search_counter():

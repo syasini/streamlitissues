@@ -10,6 +10,7 @@ from streamlitissues.mappings import (
     model_token_sizes,
 )
 from streamlitissues.utils import (
+    build_context_column,
     create_snowflake_session_root,
     query_cortex_search_service,
     parse_label_categories,
@@ -173,7 +174,7 @@ results = st.session_state["results"]
 if results is not None:
     # convert the results to a DataFrame for easier filtering and sorting
     results_df = pd.DataFrame(results)
-
+    
     # parse the label_categories column: remove [ and ] and split by ',' and remove duplicates
     results_df["label_categories"] = results_df["label_categories"].apply(
         parse_label_categories
@@ -197,12 +198,14 @@ if results is not None:
 
     # sort the results (default results are sorted by relevance directly from Snowflake)
     sorting_key, ascending = sorting_mapping.get(sorting_option, (None, None))
+    results_df["reaction_total_count"] = results_df["reaction_total_count"].fillna("0").astype(int)
+    
     if sorting_key is not None:
         results_df = results_df.sort_values(by=sorting_key, ascending=ascending)
 
+    
     # limit the number of results
     results_df = results_df.head(n_results)
-
     # ---------------------------- Display the Results ---------------------------- #
     for _, result in results_df.iterrows():
         # get the emoji for the type and state to add to the title in expanders
@@ -274,8 +277,13 @@ if chat_col is not None:
                 with messages.chat_message("user", avatar=avatar_mapping["user"]):
                     st.markdown(prompt)
 
-                # Build the context from the results_df["body"] to concatenate all the github issue descriptions
-                context = join_issue_bodies_for_context(results_df["body"].tolist())
+                # concat the columns title, body, and labels to build the context
+                # for some reason cotex_data is being returned as empty strings by cortex
+                # the new columns will be stores as 
+                # "title: <title column> body: <body column> label_categories: <label_categories column>"
+                results_df["context"] = build_context_column(results_df)    
+                     
+                context = join_issue_bodies_for_context(results_df["context"].tolist())
 
                 # Build the LLM prompt
                 prompt_text = build_prompt(prompt, context)
