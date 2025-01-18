@@ -4,6 +4,10 @@ import streamlit as st
 st.set_page_config(
     initial_sidebar_state="collapsed",
     page_icon="🎈🤧",
+    menu_items={
+        "Get help": "https://github.com/syasini/streamlitissues",
+        "Report a bug": "https://github.com/syasini/streamlitissues/issues/new?template=Blank+issue",
+    }
 )
 
 from streamlitissues.mappings import (
