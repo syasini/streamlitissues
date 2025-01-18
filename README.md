@@ -54,6 +54,11 @@ Here is a simplistic diagram of the app architecture:
 
 6. **AI Assistant:** User can optionally engage with a conversational assistant to gain further insights or identify potential solutions.
 
+## Challenges and New Learnings
+
+One of the biggest challenges in building StreamliTissues was collecting, processing, and preparing data for Cortex RAG to ingest and index. GitHub issues data is often unstructured, with diverse labels, inconsistent formatting, and varying levels of detail. Creating a robust ETL pipeline to clean, categorize, and structure this data was essential. Ensuring compatibility with Cortex’s ingestion process added an extra layer of complexity, requiring careful optimization of the data schema for efficient retrieval.
+
+Working with the Snowflake Cortex system was overall a enjoyable and rewarding experience. Despite its advanced capabilities, Cortex search and complete were straightforward to learn and integrate. Snowflake's AI systems dovetail beautifully with Streamlit's functionalities, offering a smooth and seamless experience for both developers and end users. This project highlighted how well these technologies complement each other, enabling rapid development and an intuitive user interface that enhances productivity and collaboration.
 
 ## Broader Applications
 
