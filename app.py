@@ -1,6 +1,11 @@
 import pandas as pd
 import streamlit as st
 
+st.set_page_config(
+    initial_sidebar_state="collapsed",
+    page_icon="🎈🤧",
+)
+
 from streamlitissues.mappings import (
     sorting_mapping,
     label_options_emoji_mapping,
@@ -218,7 +223,7 @@ if results is not None:
         ]
 
         # create the fancy expander title with the emojis and stuff
-        title = f"**{result['title']}** [\#{result['number']}  |  {state_emoji} {type_emoji}  |  {' '.join(labels_emoji_list)}]"
+        title = f"**{result['title'].strip()}** [\#{result['number']}  |  {state_emoji} {type_emoji}  |  {' '.join(labels_emoji_list)}]"
 
         with issue_col.expander(
             title,
