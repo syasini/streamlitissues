@@ -43,6 +43,14 @@ _, col, _ = st.columns([1, 2, 1])
 col.image("./media/logo.png", width=500)
 st.title("What seems to be your Streamlit issue?")
 
+# link to the demo video
+@st.dialog("StreamliTissues Demo", width="large")
+def watch_demo():
+    st.video("https://www.youtube.com/watch?v=oZXvlTzF9Yg")
+
+if st.button("👉 Watch the demo reel 📽️", type="tertiary"):
+    watch_demo()
+
 # Initialize the search results and counter session states
 if "results" not in st.session_state:
     st.session_state["results"] = None
