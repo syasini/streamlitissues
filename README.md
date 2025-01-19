@@ -12,6 +12,10 @@ A meta-app, built with Streamlit—supercharged with Snowflake AI—to help Stre
 
 > Wipe your Streamlit issues with StreamliTissues! —— My wife 
 
+## Demo
+
+Check out [this video](https://youtu.be/oZXvlTzF9Yg) on Youtube!
+
 ## Problem Statement
 
 The [Streamlit GitHub repository](https://github.com/streamlit/streamlit), like many open-source projects, relies heavily on its [Issues](https://github.com/streamlit/streamlit/issues) tab for tracking bugs, feature requests, and general feedback. However, GitHub's native search functionality has a major limitation: it only supports *exact string matches*. This creates several challenges:
