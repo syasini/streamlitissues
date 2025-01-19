@@ -321,7 +321,7 @@ if chat_col is not None:
                         st.markdown(response)
 
     elif chat_password == "":
-        chat_col.warning("Please enter the chat password to use the chat function.")
+        chat_col.warning("Please enter the chat password in the sidebar to use the chat function.")
     else:
         chat_col.warning(
             "Chat password is incorrect. Did someone gave you the wrong password? or did you just try to randomly guess it? 🤔"
