@@ -4,17 +4,18 @@
 [![GitHub](https://img.shields.io/badge/GitHub%20API-000?logo=github&logoColor=fff)](https://docs.github.com/en/rest)
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/)
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/-🎈tissues-white?style=flat&logo=🎈&logoColor=white)](https://tissues.streamlit.app)
 
 A meta-app, built with Streamlit—supercharged with Snowflake AI—to help Streamlit evolve, one issue at a time.
 
 
-![StreamliTissues Logo](./media/logo-medium.png)
+[![StreamliTissues Logo](./media/logo-medium.png)](https://tissues.streamlit.app/)
 
 > Wipe your Streamlit issues with StreamliTissues! —— My wife 
 
 ## Demo
 
-Check out [this video](https://youtu.be/oZXvlTzF9Yg) on Youtube!
+Check out [📽️ this video](https://youtu.be/oZXvlTzF9Yg) on Youtube, or grab this balloon and fly straight to the app: [🎈](https://tissues.streamlit.app)!
 
 ## Problem Statement
 
