@@ -164,7 +164,8 @@ with st.expander("Filter and Sort Results"):
 # -------------------------------- Chat Option ------------------------------- #
 
 # add a toggle to enable chat with the issues
-_, chat_col = st.columns(2)
+result_caption, chat_col = st.columns(2)
+
 chat_toggle = chat_col.toggle("Chat with issues", value=False)
 if chat_toggle:
     with chat_col:
@@ -182,13 +183,14 @@ if chat_toggle:
 else:
     issue_col, chat_col = st, None  # this feels a bit hacky, but seems to work...
 
-
 # ---------------------------- Process the Results --------------------------- #
 
 # define results variable for convenience
 results = st.session_state["results"]
 
 if results is not None:
+    result_caption.caption("GitHub issues last refreshed on January 10, 2024.")
+
     # convert the results to a DataFrame for easier filtering and sorting
     results_df = pd.DataFrame(results)
     
