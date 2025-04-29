@@ -2,13 +2,95 @@ import streamlit as st
 from snowflake.core import Root
 from snowflake.snowpark import Session
 from snowflake.snowpark.exceptions import SnowparkSQLException
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+import base64
+import textwrap
 
 # --------------------------- Snowflake Connection --------------------------- #
 
 
+def convert_pem_to_der(pem_key):
+    """Convert a PEM format private key to DER format.
+    
+    Snowflake's connector requires private keys in DER format for key pair authentication.
+    This function takes a PEM formatted private key (with BEGIN/END markers and proper line breaks)
+    and converts it to the binary DER format.
+    
+    Parameters:
+    -----------
+    pem_key : str
+        The private key in PEM format
+        
+    Returns:
+    --------
+    bytes
+        The private key in DER format
+        
+    Raises:
+    -------
+    Exception
+        If there's an error during key loading or conversion
+    """
+    # Convert string to bytes if needed
+    pem_bytes = pem_key.encode('utf-8') if isinstance(pem_key, str) else pem_key
+    
+    # Load the PEM key into a key object
+    key_obj = serialization.load_pem_private_key(
+        pem_bytes,
+        password=None,  # Assumes the key is not encrypted
+        backend=default_backend()
+    )
+    
+    # Convert to DER format
+    der_key = key_obj.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+    
+    return der_key
+
+
 @st.cache_resource
 def create_snowflake_session_root(connection_parameters):
-    """Create a Snowflake session and root object."""
+    """Create a Snowflake session and root object.
+    
+    Sets up a connection to Snowflake using the provided connection parameters.
+    If a private key is included in the parameters, it will be converted from PEM 
+    to DER format as required by the Snowflake connector.
+    
+    Parameters:
+    -----------
+    connection_parameters : dict
+        Dictionary containing Snowflake connection parameters including account, user,
+        role, warehouse, and optionally a private_key for key pair authentication
+        
+    Returns:
+    --------
+    tuple
+        A tuple containing (Session, Root) objects for interacting with Snowflake
+        
+    Raises:
+    -------
+    Exception
+        If there's an error establishing the connection
+    """
+    # Handle private key for Snowflake authentication
+    if "private_key" in connection_parameters:
+        # st.write("Converting PEM key to DER format")
+        
+        try:
+            # Convert the key from PEM to DER format
+            connection_parameters["private_key"] = convert_pem_to_der(
+                connection_parameters["private_key"]
+            )
+            # st.write("Private key converted to DER format")
+            
+        except Exception as e:
+            st.error(f"Error processing private key: {str(e)}")
+            raise
+        
     session = Session.builder.configs(connection_parameters).create()
     # ensure the correct warehouse is used
     session.use_warehouse(connection_parameters["warehouse"])
